@@ -1,0 +1,207 @@
+#include <NewPing.h>
+
+//for rgb sensor
+int s0=2;
+int s1=3;
+int s2=4;
+int s3=5;
+
+int sensorData=6;
+int dataR=0;
+int dataG=0;
+
+//for ldr
+int ldrPin = 13;
+
+// for HC SR04 ultrasonic sensor
+int trigPin1 = 8;
+int echoPin1 = 8;
+int trigPin2 = 9;
+int echoPin2 = 9;
+int maxDist = 400;    //range of sensor is 400cm
+
+float duration1, duration2, distance1, distance2;
+
+NewPing sonar1 (trigPin1, echoPin1, maxDist);
+NewPing sonar2 (trigPin2, echoPin2, maxDist);
+
+//for L298N dc motor driver
+int enA=10;
+int in1=7;
+int in2=12;
+
+int enB=11;
+int in3=A0;
+int in4=A1;
+
+
+void setup() 
+{
+  //for rgb sensor
+  pinMode (s0, OUTPUT);   //initialising the pins
+  pinMode (s1, OUTPUT);
+  pinMode (s2, OUTPUT);
+  pinMode (s3, OUTPUT);
+
+  pinMode (sensorData, INPUT);
+
+  digitalWrite (s0, HIGH);    //both at high for max output frequency
+  digitalWrite (s1, HIGH);
+
+  //for ldr
+  pinMode (ldrPin, INPUT);
+
+  //for ultrasound sensor
+  pinMode (trigPin1, OUTPUT);    //pulse sent out from arduino to sensor
+  pinMode (echoPin1, INPUT);   //input received from sensor
+  pinMode (trigPin2, OUTPUT);
+  pinMode (echoPin2, INPUT);
+
+  //for L298N dc motor driver
+  pinMode (enA, OUTPUT);
+  pinMode (in1, OUTPUT);
+  pinMode (in2, OUTPUT);
+  pinMode (in3, OUTPUT);
+  pinMode (in4, OUTPUT);
+  pinMode (enB, OUTPUT); 
+  
+  
+  Serial.begin (9600);
+}
+
+void loop() 
+{
+   int ldrStatus = analogRead(ldrPin);    //status of ldr value stored in ldrStatus
+   
+   digitalWrite (trigPin1, LOW);    //to start from a low state
+   delayMicroseconds (2);   //changing unit of delay from ms
+   digitalWrite (trigPin1, HIGH);
+   delayMicroseconds (10);    //sending a 10 microsecons pulse to the trigpin of HC SR04
+   digitalWrite (trigPin1, LOW);
+     //at this point, 8 pulses of 40KHz each transmitted by transmitter of sensor 1
+
+   digitalWrite (trigPin2, LOW);    //to start from a low state
+   delayMicroseconds (2);   //changing unit of delay from ms
+   digitalWrite (trigPin2, HIGH);
+   delayMicroseconds (10);    //sending a 10 microsecons pulse to the trigpin of HC SR04
+   digitalWrite (trigPin2, LOW);
+     //at this point, 8 pulses of 40KHz each transmitted by transmitter of sensor 2 
+
+   duration1 = pulseIn(echoPin1, LOW);    //measuring response received from echo pin of HC SR04. A number will be returned here displaying number of ms b/w two successive low logic levels
+   distance1 = (duration1/2)*0.0343;    //in cm, speed of sound is m/s at 20 degree celcius
+     
+   duration2 = pulseIn(echoPin2, LOW);
+   distance2 = (duration2/2)*0.0343;
+   
+   digitalWrite (s2, LOW);    // setting both low will activate the photodide with red filter and will sense red colour only
+   digitalWrite (s3, LOW);
+   dataR =pulseIn (sensorData, LOW);    //return a numeric value that represent no. of milliseconds between two identical successive logic levels
+   delay (20);
+
+   digitalWrite (s2, HIGH);    // setting both low will activate the photodide with green filter and will sense green colour only
+   digitalWrite (s3, HIGH);
+   dataG =pulseIn (sensorData, LOW);    //return a numeric value that represent no. of milliseconds between two identical successive logic levels
+   delay (20);
+
+   
+if (isRed)
+   {
+    if (ldrStatus>300)
+    {
+      if (distance1<distance2)
+      {
+        turn_left();
+      }
+      else
+      {
+        move_foreward();
+      }
+    }
+    else
+    {
+      Serial.println("threshold value not reached");
+    }
+   }
+
+if (isGreen)
+   {
+    if (ldrStatus>300)
+    {
+      if (distance1<distance2)
+      {
+        turn_right();
+      }
+      else
+      {
+        move_foreward();
+      }      
+    }
+
+    else
+    {
+      Serial.println("threshold value not reached");
+    }
+   }
+
+    
+}
+
+bool isRed ()
+{
+  if (dataR<18 && dataR>12 , dataG<49 && dataG>43)    //this data collected from noting values from serial monitor when approached by different coloured sheets.
+  {
+    Serial.println("RED DETECTED");
+    return (true);
+  }
+  else
+  {
+    Serial.println ("RED NOT DETECTED");
+    return (false);
+  }
+}
+bool isGreen ()
+{
+  if (dataR<53 && dataR>47 , dataG<44 && dataG>38)
+  {
+    Serial.println("GREEN DETECTED");
+    return (true);
+  }
+  else
+  {
+    Serial.println ("GREEN NOT DETECTED");
+    return (false);
+  }
+}
+
+void turn_right ()
+{
+digitalWrite (in1, HIGH);
+digitalWrite (in2, LOW);
+analogWrite (enA, 200);
+
+digitalWrite (in1, LOW);
+digitalWrite (in2, HIGH);
+analogWrite (enB, 200);
+}
+
+void turn_left ()
+{
+digitalWrite (in1, LOW);
+digitalWrite (in2, HIGH);
+analogWrite (enA, 200);
+
+digitalWrite (in1, HIGH);
+digitalWrite (in2, LOW);
+analogWrite (enB, 200);
+}
+
+void move_foreward ()
+{
+digitalWrite (in1, HIGH);
+digitalWrite (in2, LOW);
+analogWrite (enA, 200);
+
+digitalWrite (in1, HIGH);
+digitalWrite (in2, LOW);
+analogWrite (enB, 200);
+}
